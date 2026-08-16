@@ -32,7 +32,7 @@ export default function ShopPage() {
           </h1>
           <p className="mt-8 max-w-xl text-bone/60 md:text-lg">
             Apparel, prints, accessories. Made in small runs, shipped in 48 hours. When something
-            sells out, it's gone for the season.
+            sells out, it&apos;s gone for the season.
           </p>
         </div>
       </section>

@@ -127,9 +127,9 @@ export default function HomePage() {
             NO FILLER. <br />NO FILTER. <br /><span className="text-blade">JUST WORK.</span>
           </h2>
           <p className="mt-12 max-w-2xl text-base text-bone/60 md:text-lg">
-            This isn't a store. This isn't a channel. This isn't a brand pretending to be a culture.
-            It's the record. Every drop, every film, every print, every word, is documented here.
-            If it's not on this site, it's not part of the work.
+            This isn&apos;t a store. This isn&apos;t a channel. This isn&apos;t a brand pretending to be a culture.
+            It&apos;s the record. Every drop, every film, every print, every word, is documented here.
+            If it&apos;s not on this site, it&apos;s not part of the work.
           </p>
         </div>
       </section>

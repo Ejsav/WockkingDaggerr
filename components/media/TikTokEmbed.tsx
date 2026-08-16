@@ -20,8 +20,9 @@ interface TikTokEmbedProps {
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tiktok?: any;
+    tiktok?: {
+      embeds?: { render: (el: HTMLElement | null) => void };
+    };
   }
 }
 

@@ -52,7 +52,7 @@ export default function Hero() {
           >
             <p>
               Releases, drops, video archive, and the store. One place. No middlemen, no algorithm
-              dependency. If it's here, it's official.
+              dependency. If it&apos;s here, it&apos;s official.
             </p>
           </div>
 

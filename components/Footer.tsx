@@ -86,7 +86,7 @@ export default function Footer() {
                     <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <h3 className="font-display text-3xl uppercase text-bone">YOU'RE IN.</h3>
+                <h3 className="font-display text-3xl uppercase text-bone">YOU&apos;RE IN.</h3>
                 <p className="font-mono text-xs uppercase tracking-widest text-bone/60">{message}</p>
                 <button
                   onClick={() => setStatus("idle")}

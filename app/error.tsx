@@ -27,7 +27,7 @@ export default function ErrorPage({
         </h1>
 
         <p className="mt-8 text-base text-bone/60 md:text-lg">
-          Something went wrong on the server side. It's logged.
+          Something went wrong on the server side. It&apos;s logged.
           Try again — if it keeps happening, the team knows.
         </p>
 

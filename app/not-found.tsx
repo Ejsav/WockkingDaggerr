@@ -14,7 +14,7 @@ export default function NotFound() {
         </h1>
 
         <p className="mt-8 text-base text-bone/60 md:text-lg">
-          That page doesn't exist, was moved, or never made it past the cut.
+          That page doesn&apos;t exist, was moved, or never made it past the cut.
           Nothing broken — just not here.
         </p>
 
