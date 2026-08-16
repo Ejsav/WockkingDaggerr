@@ -11,14 +11,16 @@ import { autoSyncYouTube, autoSyncTwitch } from "@/lib/auto-sync";
 import { getCachedPosts } from "@/lib/post-cache";
 import { getActiveProducts, getNextDrop } from "@/lib/mock-data";
 
-// Required for top-level await and server-side Node.js APIs
+// Required for server-side Node.js APIs
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Auto-sync YouTube + Twitch VODs on first server render if credentials exist
-await Promise.all([autoSyncYouTube(), autoSyncTwitch()]);
+export default async function HomePage() {
+  // Auto-sync YouTube + Twitch VODs on render if credentials exist.
+  // Runs inside the component (not at module scope) so a sync failure can
+  // never prevent the route module from loading.
+  await Promise.all([autoSyncYouTube(), autoSyncTwitch()]);
 
-export default function HomePage() {
   // Only show YouTube posts in the Watch strip — TikTok + Instagram go in SocialSection
   const posts = getCachedPosts()
     .filter((p) => p.platform === "youtube")
