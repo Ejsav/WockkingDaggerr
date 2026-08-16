@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="gthumb-7" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#121212"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <radialGradient id="rthumb-7" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#c8102e" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#c8102e" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="noisethumb-7" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="rgba(255,255,255,0.02)"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="url(#gthumb-7)"/>
+  <rect width="1280" height="720" fill="url(#rthumb-7)"/>
+  <rect width="1280" height="720" fill="url(#noisethumb-7)"/>
+
+  <!-- Blade marks -->
+  <g opacity="0.06" fill="#f5f1ea">
+    <polygon points="640,160 600,260 620,260 620,540 660,540 660,260 680,260"/>
+  </g>
+
+  <!-- Diagonal slash -->
+  <line x1="0" y1="720" x2="1280" y2="100" stroke="#c8102e" stroke-width="1" opacity="0.15"/>
+  <line x1="0" y1="620" x2="1280" y2="0" stroke="#f5f1ea" stroke-width="1" opacity="0.05"/>
+
+  <!-- Corner mark -->
+  <g transform="translate(60, 60)" fill="#c8102e">
+    <rect width="32" height="2"/>
+    <rect width="2" height="32"/>
+  </g>
+  <g transform="translate(1220, 660)" fill="#c8102e">
+    <rect x="-32" y="-2" width="32" height="2"/>
+    <rect x="-2" y="-32" width="2" height="32"/>
+  </g>
+
+  <!-- Label -->
+  <text x="640" y="380" fill="#f5f1ea" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="88" text-anchor="middle" letter-spacing="2" opacity="0.9">BACKSTAGE</text>
+  <text x="640" y="420" fill="#c8102e" font-family="Courier New, monospace" font-size="14" text-anchor="middle" letter-spacing="6">━━ WOCKKINGDAGGER ━━</text>
+</svg>

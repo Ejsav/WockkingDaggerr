@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="gproduct-3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#121212"/>
+    </linearGradient>
+    <radialGradient id="rproduct-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c8102e" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#c8102e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#gproduct-3)"/>
+  <rect width="800" height="1000" fill="url(#rproduct-3)"/>
+
+  <!-- Big blade silhouette -->
+  <g transform="translate(400, 500)" opacity="0.12" fill="#f5f1ea">
+    <polygon points="0,-280 -55,-100 -25,-100 -25,180 25,180 25,-100 55,-100"/>
+  </g>
+
+  <!-- Crosshair corners -->
+  <g stroke="#c8102e" stroke-width="1" fill="none">
+    <line x1="40" y1="40" x2="80" y2="40"/>
+    <line x1="40" y1="40" x2="40" y2="80"/>
+    <line x1="760" y1="40" x2="720" y2="40"/>
+    <line x1="760" y1="40" x2="760" y2="80"/>
+    <line x1="40" y1="960" x2="80" y2="960"/>
+    <line x1="40" y1="960" x2="40" y2="920"/>
+    <line x1="760" y1="960" x2="720" y2="960"/>
+    <line x1="760" y1="960" x2="760" y2="920"/>
+  </g>
+
+  <!-- Label -->
+  <text x="400" y="820" fill="#f5f1ea" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="62" text-anchor="middle" letter-spacing="2">CREST CAP</text>
+  <text x="400" y="860" fill="#c8102e" font-family="Courier New, monospace" font-size="13" text-anchor="middle" letter-spacing="6">━━ EDITION ━━</text>
+</svg>
