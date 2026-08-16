@@ -2,32 +2,18 @@
 
 import { useMemo } from "react";
 
-// ============================================================
-// TWITCH PLAYER
-// Handles both live channel embeds and VOD embeds.
-// Parent domain is required by Twitch's embed policy.
-// Reads NEXT_PUBLIC_TWITCH_PARENT_DOMAIN from env.
-//
-// Usage:
-//   <TwitchPlayer type="live" channel="wockkingdaggerr" />
-//   <TwitchPlayer type="vod" vodId="1234567890" />
-// ============================================================
-
 interface TwitchPlayerProps {
   type: "live" | "vod";
-  channel?: string; // for live
-  vodId?: string; // for VOD
+  channel?: string;
+  vodId?: string;
   autoplay?: boolean;
   muted?: boolean;
   className?: string;
 }
 
 function getParentDomain(): string {
-  // NEXT_PUBLIC_ vars are safe to use in client components
   const raw = process.env.NEXT_PUBLIC_TWITCH_PARENT_DOMAIN ?? "";
   if (raw) return raw;
-
-  // Fallback: derive from the browser's hostname at runtime
   if (typeof window !== "undefined") return window.location.hostname;
   return "localhost";
 }
@@ -36,13 +22,12 @@ export default function TwitchPlayer({
   type,
   channel,
   vodId,
-  autoplay = true,
-  muted = false,
+  autoplay = false,
+  muted = true,
   className = "",
 }: TwitchPlayerProps) {
   const src = useMemo(() => {
     const parent = getParentDomain();
-    const base = "https://player.twitch.tv/?";
     const params = new URLSearchParams();
 
     if (type === "live" && channel) {
@@ -54,10 +39,10 @@ export default function TwitchPlayer({
     }
 
     params.set("parent", parent);
-    if (autoplay) params.set("autoplay", "true");
-    if (muted) params.set("muted", "true");
+    params.set("autoplay", autoplay ? "true" : "false");
+    params.set("muted", muted ? "true" : "false");
 
-    return base + params.toString();
+    return `https://player.twitch.tv/?${params.toString()}`;
   }, [type, channel, vodId, autoplay, muted]);
 
   if (!src) {
@@ -75,13 +60,10 @@ export default function TwitchPlayer({
       src={src}
       allowFullScreen
       allow="autoplay; fullscreen; picture-in-picture"
+      loading="lazy"
+      referrerPolicy="strict-origin-when-cross-origin"
       className={`h-full w-full border-0 ${className}`}
-      title={
-        type === "live"
-          ? `${channel} live on Twitch`
-          : `Twitch VOD ${vodId}`
-      }
-      sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+      title={type === "live" ? `${channel} live on Twitch` : `Twitch VOD ${vodId}`}
     />
   );
 }

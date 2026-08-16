@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import TwitchPlayer from "@/components/media/TwitchPlayer";
 import type { LiveResponse } from "@/app/api/live/route";
 import { WD } from "@/lib/wockkingdagger";
 
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 60_000;
 
 function formatViewers(n: number | null): string {
   if (n === null) return "";
@@ -25,36 +25,45 @@ function formatStreamDuration(startedAt: string | null): string {
 
 export default function LiveBanner() {
   const [data, setData] = useState<LiveResponse | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [muted, setMuted] = useState(true);
-  const interval = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  async function poll() {
-    try {
-      const res = await fetch("/api/live", { cache: "no-store" });
-      if (!res.ok) return;
-      const json: LiveResponse = await res.json();
-      setData(json);
-      if (json.isLive) setCollapsed(false); // auto-expand when stream starts
-    } catch {
-      // silent fail, retry on next tick
-    }
-  }
 
   useEffect(() => {
-    poll();
-    interval.current = setInterval(poll, POLL_INTERVAL_MS);
-    return () => { if (interval.current) clearInterval(interval.current); };
+    let cancelled = false;
+
+    async function pollLive() {
+      if (document.visibilityState !== "visible") return;
+
+      try {
+        const res = await fetch("/api/live", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const json: LiveResponse = await res.json();
+        if (!cancelled) setData(json);
+      } catch {
+        // Keep the last known UI state and retry on the next visible interval.
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void pollLive();
+    };
+
+    void pollLive();
+    const intervalId = window.setInterval(() => void pollLive(), POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
-  // Not live — render nothing
   if (!data?.isLive) return null;
 
   return (
     <div className="relative z-40 border-b-2 border-blade bg-ink-800">
-      {/* ── TOP BAR ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blade/20 bg-blade/10 px-4 py-3 md:px-6">
-        {/* Left — live indicator + stream info */}
         <div className="flex flex-wrap items-center gap-3 md:gap-5">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
@@ -92,44 +101,42 @@ export default function LiveBanner() {
           </div>
         </div>
 
-        {/* Right — controls */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMuted((m) => !m)}
-            className="border border-white/15 px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bone/60 transition-colors hover:border-bone hover:text-bone"
-            aria-label={muted ? "Unmute stream" : "Mute stream"}
-          >
-            {muted ? "UNMUTE" : "MUTE"}
-          </button>
+          {!collapsed && (
+            <button
+              onClick={() => setMuted((value) => !value)}
+              className="min-h-11 border border-white/15 px-3 font-mono text-[10px] uppercase tracking-widest text-bone/60 transition-colors hover:border-bone hover:text-bone"
+              aria-label={muted ? "Unmute stream" : "Mute stream"}
+            >
+              {muted ? "UNMUTE" : "MUTE"}
+            </button>
+          )}
 
           <a
             href={WD.twitch.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blade px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bone transition-opacity hover:opacity-80"
+            className="flex min-h-11 items-center bg-blade px-3 font-mono text-[10px] uppercase tracking-widest text-bone transition-transform hover:-translate-y-0.5"
           >
             OPEN TWITCH →
           </a>
 
           <button
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? "Expand player" : "Collapse player"}
-            className="flex h-8 w-8 items-center justify-center border border-white/15 text-bone/50 hover:text-bone"
+            onClick={() => setCollapsed((value) => !value)}
+            aria-label={collapsed ? "Load live player" : "Collapse live player"}
+            className="flex h-11 min-w-11 items-center justify-center border border-white/15 px-3 font-mono text-[10px] uppercase tracking-widest text-bone/70 transition-colors hover:border-bone hover:text-bone"
           >
-            <svg viewBox="0 0 24 24" fill="none" className={`h-3.5 w-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`} stroke="currentColor" strokeWidth="2.5">
-              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {collapsed ? "WATCH HERE" : "HIDE"}
           </button>
         </div>
       </div>
 
-      {/* ── PLAYER ── */}
       {!collapsed && (
         <div className="relative w-full" style={{ aspectRatio: "16/9", maxHeight: "72vh" }}>
           <TwitchPlayer
             type="live"
             channel={data.channelLogin}
-            autoplay={true}
+            autoplay
             muted={muted}
             className="absolute inset-0 h-full w-full"
           />
