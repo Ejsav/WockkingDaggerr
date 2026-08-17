@@ -7,12 +7,13 @@ import { useEffect, useRef, useState } from "react";
 // Stream-style boot: blade mark draws in, wordmark glitch-reveals,
 // rotating status lines, integrated progress readout.
 //
-// - Runs ONCE per session (sessionStorage gate)
+// - Plays on every full page load / reload (component remounts fresh
+//   each time the document loads — it does NOT run on client-side
+//   route navigations, since this lives in the root layout and never
+//   unmounts during in-app navigation).
 // - Reduced motion => instant, near-invisible fade
 // - Total duration ~1.6s. Fast on purpose.
 // ------------------------------------------------------------
-
-const SESSION_KEY = "wd_booted";
 
 const BOOT_LINES = [
   "SHARPENING THE BLADE",
@@ -33,21 +34,6 @@ export default function BootScreen() {
   const linesRef = useRef<string[]>(BOOT_LINES);
 
   useEffect(() => {
-    // Session gate — never replay within the same tab session
-    let alreadyBooted = true;
-    try {
-      alreadyBooted = sessionStorage.getItem(SESSION_KEY) === "1";
-    } catch {
-      alreadyBooted = true;
-    }
-    if (alreadyBooted) return;
-
-    try {
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {
-      /* private mode — still show once */
-    }
-
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
       // Minimal: brief black frame, no animation sequence
