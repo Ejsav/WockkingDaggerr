@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm ci",
+  "crons": [
+    {
+      "path": "/api/sync/live",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/sync/youtube",
+      "schedule": "17 * * * *"
+    },
+    {
+      "path": "/api/sync/twitch",
+      "schedule": "32 * * * *"
+    },
+    {
+      "path": "/api/sync/tiktok",
+      "schedule": "47 */6 * * *"
+    },
+    {
+      "path": "/api/sync/instagram",
+      "schedule": "52 */6 * * *"
+    }
+  ]
+}

@@ -3,7 +3,10 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-export default function ErrorPage({
+// Client-side error boundary. `digest` is the server-generated id that
+// correlates to the logged error — it is safe to show and useful in
+// support, unlike the message itself.
+export default function Error({
   error,
   reset,
 }: {
@@ -11,40 +14,35 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to your error tracking service here when you add one
-    console.error("[WD Error]", error);
+    console.error("[boundary]", error.digest ?? error.message);
   }, [error]);
 
   return (
-    <section className="flex min-h-[100svh] flex-col items-center justify-center px-5 pt-32 text-center md:px-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(200,16,46,0.08),transparent_60%)]" />
-
-      <div className="relative z-10 max-w-3xl">
-        <p className="eyebrow-blade mb-6">━━ ERROR</p>
-
-        <h1 className="display text-[clamp(5rem,15vw,14rem)] leading-[0.85] text-bone">
-          BROKE.
+    <section className="mx-auto grid min-h-[70svh] max-w-2xl place-items-center px-gutter py-section text-center">
+      <div>
+        <p className="eyebrow-accent mb-5">Something broke</p>
+        <h1 className="display text-[clamp(2.5rem,8vw,5rem)]">
+          That did not
+          <br />
+          <span className="text-blade-text">work.</span>
         </h1>
-
-        <p className="mt-8 text-base text-bone/60 md:text-lg">
-          Something went wrong on the server side. It's logged.
-          Try again — if it keeps happening, the team knows.
+        <p className="prose-body mx-auto mt-6">
+          The page failed to load. Trying again usually fixes it; if it does not, the reference
+          below will tell us what happened.
         </p>
-
-        {error.digest && (
-          <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-bone/30">
-            REF: {error.digest}
-          </p>
-        )}
-
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-          <button onClick={reset} className="btn-blade">
-            TRY AGAIN →
+        <div className="mt-10 flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={reset} className="btn btn-primary">
+            <span>Try again</span>
           </button>
-          <Link href="/" className="btn-bone">
-            BACK TO HUB
+          <Link href="/" className="btn btn-secondary">
+            <span>Home</span>
           </Link>
         </div>
+        {error.digest && (
+          <p className="mt-8 font-mono text-[11px] uppercase tracking-button text-tertiary">
+            Reference {error.digest}
+          </p>
+        )}
       </div>
     </section>
   );

@@ -1,50 +1,48 @@
-import { WD } from "@/lib/wockkingdagger";
-import type { MediaItem } from "@/lib/media";
+import "server-only";
+import { serverEnv } from "@/lib/env";
+import { fetchWithTimeout } from "@/lib/http";
+import { parseTwitchDuration } from "@/lib/utils";
+import type { LiveStatus, MediaItem } from "@/types";
+import { failed, skipped, type ProviderResult } from "@/lib/providers/types";
 
 // ============================================================
-// TWITCH PROVIDER
-// Uses the Twitch Helix API with app access tokens (no user
-// authorization required). Reads TWITCH_CLIENT_ID and
-// TWITCH_CLIENT_SECRET from env — both stay server-side.
+// TWITCH — Helix, app access token (no user authorization)
 //
-// Exposes:
-//   getTwitchLiveStatus()  — polling-friendly live check
-//   getTwitchVods()        — ALL public VODs (cursor-paginated)
-//   getTwitchUserId()      — resolves login → user ID
+// Both entry points run from cron only:
+//   fetchTwitchVods()      cursor-paginated archive
+//   fetchTwitchLiveStatus() single stream check
+//
+// The token and user-id caches below are pure optimizations. If
+// the process is recycled they are simply refetched — no feature
+// depends on them surviving.
 // ============================================================
 
-// ------------------------------------------------------------
-// TOKEN CACHE — globalThis survives Next.js hot-reloads
-// ------------------------------------------------------------
-declare global {
-  // eslint-disable-next-line no-var
-  var __twitchToken: { token: string; expiresAt: number } | null;
-  // eslint-disable-next-line no-var
-  var __twitchUserId: string | null;
-}
+const HELIX = "https://api.twitch.tv/helix";
+const MAX_VODS = 500;
 
-globalThis.__twitchToken = globalThis.__twitchToken ?? null;
-globalThis.__twitchUserId = globalThis.__twitchUserId ?? null;
+let tokenCache: { token: string; expiresAt: number } | null = null;
+let userIdCache: { login: string; id: string } | null = null;
 
-async function getAppToken(): Promise<string | null> {
-  const clientId = process.env.TWITCH_CLIENT_ID;
-  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+async function appToken(): Promise<string | null> {
+  const clientId = serverEnv.twitchClientId;
+  const clientSecret = serverEnv.twitchClientSecret;
   if (!clientId || !clientSecret) return null;
 
-  if (globalThis.__twitchToken && Date.now() < globalThis.__twitchToken.expiresAt) {
-    return globalThis.__twitchToken.token;
-  }
+  if (tokenCache && Date.now() < tokenCache.expiresAt) return tokenCache.token;
+
+  const url = new URL("https://id.twitch.tv/oauth2/token");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("client_secret", clientSecret);
+  url.searchParams.set("grant_type", "client_credentials");
 
   try {
-    const res = await fetch(
-      `https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`,
-      { method: "POST" }
-    );
+    const res = await fetchWithTimeout(url.toString(), { method: "POST", timeoutMs: 8000 });
     if (!res.ok) return null;
-    const json = await res.json();
-    globalThis.__twitchToken = {
+    const json = (await res.json()) as { access_token?: string; expires_in?: number };
+    if (!json.access_token) return null;
+    tokenCache = {
       token: json.access_token,
-      expiresAt: Date.now() + (json.expires_in - 300) * 1000,
+      expiresAt: Date.now() + Math.max(60, (json.expires_in ?? 3600) - 300) * 1000,
     };
     return json.access_token;
   } catch {
@@ -52,204 +50,176 @@ async function getAppToken(): Promise<string | null> {
   }
 }
 
-function twitchHeaders(token: string): Record<string, string> {
+function headers(token: string): Record<string, string> {
   return {
-    "Client-Id": process.env.TWITCH_CLIENT_ID!,
+    "Client-Id": serverEnv.twitchClientId ?? "",
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
   };
 }
 
-// Resolve channel login → numeric user ID (cached per process)
-async function getUserId(token: string, login: string): Promise<string | null> {
-  if (globalThis.__twitchUserId) return globalThis.__twitchUserId;
+async function resolveUserId(token: string, login: string): Promise<string | null> {
+  if (userIdCache?.login === login) return userIdCache.id;
   try {
-    const res = await fetch(
-      `https://api.twitch.tv/helix/users?login=${encodeURIComponent(login)}`,
-      { headers: twitchHeaders(token), next: { revalidate: 3600 } }
+    const res = await fetchWithTimeout(
+      `${HELIX}/users?login=${encodeURIComponent(login)}`,
+      { headers: headers(token), timeoutMs: 8000 }
     );
     if (!res.ok) return null;
-    const json = await res.json();
-    const userId = json.data?.[0]?.id ?? null;
-    if (userId) globalThis.__twitchUserId = userId;
-    return userId;
+    const json = (await res.json()) as { data?: Array<{ id?: string }> };
+    const id = json.data?.[0]?.id ?? null;
+    if (id) userIdCache = { login, id };
+    return id;
   } catch {
     return null;
   }
 }
 
+function sizedThumbnail(url: string | undefined): string | null {
+  if (!url) return null;
+  return url
+    .replace("%{width}", "640")
+    .replace("%{height}", "360")
+    .replace("{width}", "640")
+    .replace("{height}", "360");
+}
+
+// ------------------------------------------------------------
+// VODs
+// ------------------------------------------------------------
+
+export async function fetchTwitchVods(limit = MAX_VODS): Promise<ProviderResult> {
+  if (!serverEnv.twitchClientId || !serverEnv.twitchClientSecret) {
+    return skipped("TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET not set");
+  }
+
+  const token = await appToken();
+  if (!token) return failed("Twitch app token request failed");
+
+  const login = serverEnv.twitchChannelLogin;
+  const userId = await resolveUserId(token, login);
+  if (!userId) return failed(`Could not resolve Twitch user "${login}"`);
+
+  const raw: Array<Record<string, unknown>> = [];
+  let cursor: string | undefined;
+  const cap = Math.min(limit, MAX_VODS);
+  let error: string | null = null;
+
+  do {
+    const url = new URL(`${HELIX}/videos`);
+    url.searchParams.set("user_id", userId);
+    url.searchParams.set("type", "archive");
+    url.searchParams.set("first", "100");
+    if (cursor) url.searchParams.set("after", cursor);
+
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(url.toString(), { headers: headers(token), timeoutMs: 8000 });
+    } catch (err) {
+      error = `twitch videos: ${(err as Error).message}`;
+      break;
+    }
+    if (!res.ok) {
+      error = `twitch videos: HTTP ${res.status}`;
+      break;
+    }
+
+    const json = (await res.json()) as {
+      data?: Array<Record<string, unknown>>;
+      pagination?: { cursor?: string };
+    };
+    raw.push(...(json.data ?? []));
+    cursor = json.pagination?.cursor;
+  } while (cursor && raw.length < cap);
+
+  const items: MediaItem[] = raw.map((v) => {
+    const id = String(v.id);
+    const views = typeof v.view_count === "number" ? v.view_count : null;
+    return {
+      id: `twitch:${id}`,
+      source: "twitch" as const,
+      kind: "vod" as const,
+      external_id: id,
+      title: (v.title as string) || "Untitled VOD",
+      description: ((v.description as string) || "").trim() || null,
+      thumbnail_url: sizedThumbnail(v.thumbnail_url as string | undefined),
+      permalink: (v.url as string) ?? `https://www.twitch.tv/videos/${id}`,
+      embed_url: null, // built at render time — the player needs a `parent` per host
+      published_at: (v.published_at as string) ?? (v.created_at as string) ?? null,
+      duration_seconds: parseTwitchDuration(v.duration as string),
+      view_count: views,
+      visible: true,
+      synced_at: new Date().toISOString(),
+    };
+  });
+
+  // A partial page plus an error is still useful; nothing plus an error is a failure.
+  if (items.length === 0 && error) return failed(error);
+  return { items, configured: true, error };
+}
+
 // ------------------------------------------------------------
 // LIVE STATUS
 // ------------------------------------------------------------
-export interface TwitchLiveStatus {
-  isLive: boolean;
+
+export interface LiveProbe {
+  status: Omit<LiveStatus, "checked_at"> | null;
   configured: boolean;
-  channelLogin: string;
-  title: string | null;
-  game: string | null;
-  viewerCount: number | null;
-  thumbnailUrl: string | null;
-  startedAt: string | null;
-  streamId: string | null;
   error: string | null;
 }
 
-export async function getTwitchLiveStatus(): Promise<TwitchLiveStatus> {
-  const channelLogin = WD.twitch.channelLogin;
-  const clientId = process.env.TWITCH_CLIENT_ID;
-  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+export async function fetchTwitchLiveStatus(): Promise<LiveProbe> {
+  const login = serverEnv.twitchChannelLogin;
 
-  const base: TwitchLiveStatus = {
-    isLive: false,
-    configured: !!(clientId && clientSecret),
-    channelLogin,
-    title: null,
-    game: null,
-    viewerCount: null,
-    thumbnailUrl: null,
-    startedAt: null,
-    streamId: null,
-    error: null,
-  };
-
-  if (!clientId || !clientSecret) {
-    return { ...base, error: "Missing TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET" };
+  if (!serverEnv.twitchClientId || !serverEnv.twitchClientSecret) {
+    return { status: null, configured: false, error: "Twitch credentials not set" };
   }
 
-  const token = await getAppToken();
-  if (!token) return { ...base, error: "Failed to get Twitch app token" };
+  const token = await appToken();
+  if (!token) return { status: null, configured: true, error: "Twitch app token request failed" };
 
   try {
-    const res = await fetch(
-      `https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(channelLogin)}`,
-      { headers: twitchHeaders(token), next: { revalidate: 0 } }
+    const res = await fetchWithTimeout(
+      `${HELIX}/streams?user_login=${encodeURIComponent(login)}`,
+      { headers: headers(token), timeoutMs: 6000, retries: 1 }
     );
-
     if (!res.ok) {
-      return { ...base, error: `Twitch API ${res.status}` };
+      return { status: null, configured: true, error: `twitch streams: HTTP ${res.status}` };
     }
 
-    const json = await res.json();
+    const json = (await res.json()) as { data?: Array<Record<string, unknown>> };
     const stream = json.data?.[0];
 
-    if (!stream) return base; // Offline
+    if (!stream) {
+      return {
+        status: {
+          is_live: false,
+          platform: "twitch",
+          channel: login,
+          title: null,
+          game: null,
+          viewer_count: null,
+          started_at: null,
+        },
+        configured: true,
+        error: null,
+      };
+    }
 
     return {
-      isLive: true,
+      status: {
+        is_live: true,
+        platform: "twitch",
+        channel: login,
+        title: (stream.title as string) ?? null,
+        game: (stream.game_name as string) ?? null,
+        viewer_count:
+          typeof stream.viewer_count === "number" ? stream.viewer_count : null,
+        started_at: (stream.started_at as string) ?? null,
+      },
       configured: true,
-      channelLogin,
-      title: stream.title ?? "Live Now",
-      game: stream.game_name ?? null,
-      viewerCount: typeof stream.viewer_count === "number" ? stream.viewer_count : null,
-      thumbnailUrl: stream.thumbnail_url
-        ? stream.thumbnail_url.replace("{width}", "1280").replace("{height}", "720")
-        : null,
-      startedAt: stream.started_at ?? null,
-      streamId: stream.id ?? null,
       error: null,
     };
-  } catch (err: any) {
-    return { ...base, error: err?.message ?? "Unknown error" };
-  }
-}
-
-// ------------------------------------------------------------
-// VODs — ALL public VODs via cursor-based pagination
-// Twitch caps each page at 100. We paginate until exhausted
-// or until the hard cap (MAX_VODS) is hit.
-// ------------------------------------------------------------
-export interface TwitchVodResult {
-  items: MediaItem[];
-  configured: boolean;
-  error: string | null;
-}
-
-const MAX_VODS = 500; // Safety cap — well beyond typical channel size
-
-function parseTwitchDuration(dur: string): number | null {
-  if (!dur) return null;
-  // Format: "1h2m3s" or "42m10s" or "1s"
-  const match = dur.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
-  if (!match) return null;
-  return (parseInt(match[1] ?? "0") * 3600) +
-    (parseInt(match[2] ?? "0") * 60) +
-    parseInt(match[3] ?? "0");
-}
-
-export async function getTwitchVods(limit = MAX_VODS): Promise<TwitchVodResult> {
-  const channelLogin = WD.twitch.channelLogin;
-  const clientId = process.env.TWITCH_CLIENT_ID;
-  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    return {
-      items: [],
-      configured: false,
-      error: "Missing TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET",
-    };
-  }
-
-  const token = await getAppToken();
-  if (!token) return { items: [], configured: true, error: "Token fetch failed" };
-
-  const userId = await getUserId(token, channelLogin);
-  if (!userId) return { items: [], configured: true, error: "Could not resolve Twitch user ID" };
-
-  try {
-    const allVods: any[] = [];
-    let cursor: string | undefined;
-    const cap = Math.min(limit, MAX_VODS);
-
-    // Paginate until exhausted or cap hit
-    do {
-      const url = new URL("https://api.twitch.tv/helix/videos");
-      url.searchParams.set("user_id", userId);
-      url.searchParams.set("type", "archive");
-      url.searchParams.set("first", "100"); // max per page Twitch allows
-      if (cursor) url.searchParams.set("after", cursor);
-
-      const res = await fetch(url.toString(), {
-        headers: twitchHeaders(token),
-        next: { revalidate: 300 }, // cache 5 min
-      });
-
-      if (!res.ok) {
-        // Partial result is fine — return what we have
-        break;
-      }
-
-      const json = await res.json();
-      const page: any[] = json.data ?? [];
-      allVods.push(...page);
-      cursor = json.pagination?.cursor ?? undefined;
-
-      // Stop if Twitch signals no more pages or we hit the cap
-    } while (cursor && allVods.length < cap);
-
-    const items: MediaItem[] = allVods.map((v) => ({
-      id: `twitch_${v.id}`,
-      source: "twitch" as const,
-      type: "vod" as const,
-      title: v.title ?? "Untitled VOD",
-      description: v.description ?? null,
-      thumbnail: v.thumbnail_url
-        ? v.thumbnail_url
-            .replace("%{width}", "640")
-            .replace("%{height}", "360")
-            .replace("{width}", "640")
-            .replace("{height}", "360")
-        : null,
-      publishedAt: v.published_at ?? v.created_at ?? null,
-      duration: parseTwitchDuration(v.duration ?? ""),
-      viewCount: typeof v.view_count === "number" ? v.view_count : null,
-      url: v.url ?? `https://twitch.tv/videos/${v.id}`,
-      embedUrl: `https://player.twitch.tv/?video=${v.id}`,
-      platformLabel: "Twitch" as const,
-      externalId: v.id,
-    }));
-
-    return { items, configured: true, error: null };
-  } catch (err: any) {
-    return { items: [], configured: true, error: err?.message ?? "Unknown error" };
+  } catch (err) {
+    return { status: null, configured: true, error: (err as Error).message };
   }
 }

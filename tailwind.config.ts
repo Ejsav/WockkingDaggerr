@@ -1,81 +1,81 @@
 import type { Config } from "tailwindcss";
 
+// ============================================================
+// Tailwind reads from the CSS custom properties in globals.css
+// rather than redeclaring them. One place to change a colour,
+// a line weight, or a duration.
+// ============================================================
+
 const config: Config = {
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        display: ["var(--font-display)"],
+        body: ["var(--font-body)"],
+        mono: ["var(--font-mono)"],
       },
       colors: {
         ink: {
-          DEFAULT: "#0a0a0a",
-          900: "#0a0a0a",
-          800: "#121212",
-          700: "#1a1a1a",
-          600: "#222222",
-          500: "#2c2c2c",
+          DEFAULT: "var(--ink)",
+          raise: "var(--ink-raise)",
+          "raise-2": "var(--ink-raise-2)",
         },
-        bone: {
-          DEFAULT: "#f5f1ea",
-          50: "#fdfcfa",
-          100: "#f5f1ea",
-          200: "#e8e2d5",
-          300: "#c9c0ad",
-        },
+        bone: "var(--bone)",
         blade: {
-          DEFAULT: "#c8102e",
-          50: "#ffe7eb",
-          400: "#e63b54",
-          500: "#c8102e",
-          600: "#a00922",
-          700: "#770818",
+          DEFAULT: "var(--blade)",
+          text: "var(--blade-text)",
         },
-        gold: {
-          DEFAULT: "#c9a24a",
-          400: "#e3c074",
-          500: "#c9a24a",
-          600: "#9c7a2e",
+        gold: "var(--gold)",
+        surface: {
+          0: "var(--surface-0)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
         },
+      },
+      textColor: {
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        tertiary: "var(--text-tertiary)",
+      },
+      borderColor: {
+        faint: "var(--line-faint)",
+        DEFAULT: "var(--line)",
+        strong: "var(--line-strong)",
+      },
+      fontSize: {
+        hero: ["var(--step-hero)", { lineHeight: "var(--leading-display)" }],
+        display: ["var(--step-display)", { lineHeight: "var(--leading-display)" }],
+        section: ["var(--step-section)", { lineHeight: "var(--leading-heading)" }],
+        card: ["var(--step-card)", { lineHeight: "1.2" }],
+        meta: ["var(--step-meta)", { lineHeight: "1.4" }],
       },
       letterSpacing: {
-        wider: ".08em",
-        widest: ".22em",
+        display: "var(--tracking-display)",
+        eyebrow: "var(--tracking-eyebrow)",
+        button: "var(--tracking-button)",
       },
-      animation: {
-        "fade-up": "fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-        "fade-in": "fadeIn 0.6s ease-out both",
-        "scale-in": "scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
-        marquee: "marquee 40s linear infinite",
-        pulse_blade: "pulseBlade 2.4s ease-in-out infinite",
+      spacing: {
+        nav: "var(--nav-h)",
+        gutter: "var(--gutter)",
+        section: "var(--section-y)",
       },
-      keyframes: {
-        fadeUp: {
-          "0%": { opacity: "0", transform: "translateY(24px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
-        scaleIn: {
-          "0%": { opacity: "0", transform: "scale(0.96)" },
-          "100%": { opacity: "1", transform: "scale(1)" },
-        },
-        marquee: {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
-        },
-        pulseBlade: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.55" },
-        },
+      maxWidth: {
+        shell: "var(--shell)",
+        measure: "var(--measure)",
+      },
+      transitionTimingFunction: {
+        out: "var(--ease-out)",
+        "in-out": "var(--ease-in-out)",
+      },
+      transitionDuration: {
+        fast: "var(--dur-fast)",
+        base: "var(--dur-base)",
+        slow: "var(--dur-slow)",
+      },
+      screens: {
+        // The narrowest phone still in real use. Layouts are checked here.
+        xs: "360px",
       },
     },
   },

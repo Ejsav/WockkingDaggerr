@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="CHAIN VAULT">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141414"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <radialGradient id="r" cx="72%" cy="18%" r="62%">
+      <stop offset="0%" stop-color="#c8102e" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#c8102e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)"/>
+  <rect width="800" height="1000" fill="url(#r)"/>
+  <g fill="none" stroke="#f5f1ea" stroke-opacity="0.07" stroke-width="1">
+    <path d="M0 250h800M0 500h800M0 750h800M200 0v1000M400 0v1000M600 0v1000"/>
+  </g>
+  <path d="M400 300 L360 356 h24 v130 l-20 24 36 24 36-24-20-24V356h24z" fill="#c8102e" fill-opacity="0.9"/>
+  <text x="400" y="620" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif"
+        font-size="72" letter-spacing="4" fill="#f5f1ea" fill-opacity="0.92">CHAIN</text>
+  <text x="400" y="672" text-anchor="middle" font-family="monospace"
+        font-size="20" letter-spacing="8" fill="#f5f1ea" fill-opacity="0.45">VAULT</text>
+  <text x="400" y="930" text-anchor="middle" font-family="monospace"
+        font-size="15" letter-spacing="6" fill="#f5f1ea" fill-opacity="0.30">WOCKKINGDAGGER</text>
+</svg>

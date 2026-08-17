@@ -7,3 +7,8 @@ node_modules/
 *.log
 .vercel
 next-env.d.ts
+
+# test output
+/playwright-report
+/test-results
+/coverage

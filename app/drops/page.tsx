@@ -1,64 +1,116 @@
-import Link from "next/link";
-import DropCountdown from "@/components/DropCountdown";
-import ProductCard from "@/components/ProductCard";
-import { getAllDrops, getProductById, computeDropStatus } from "@/lib/mock-data";
+import Image from "next/image";
+import type { Metadata } from "next";
+import { getDropsView, getDropProducts } from "@/lib/data/catalog";
 import { formatDate } from "@/lib/utils";
+import Countdown from "@/components/site/Countdown";
+import ProductCard from "@/components/shop/ProductCard";
+import EmptyState from "@/components/site/EmptyState";
+import SignupForm from "@/components/site/SignupForm";
+import JsonLd from "@/components/site/JsonLd";
+import { Reveal, MaskLine } from "@/components/motion/Reveal";
+import { breadcrumbSchema, dropEventSchema } from "@/lib/schema";
 
-export default function DropsPage() {
-  const drops = getAllDrops().map((d) => ({ ...d, status: computeDropStatus(d) }));
-  const upcoming = drops.find((d) => d.status === "upcoming");
-  const live = drops.find((d) => d.status === "live");
-  const ended = drops.filter((d) => d.status === "ended");
+// Every drop on this page was entered in the control room. There is no
+// seeded drop anywhere in the codebase, so an empty calendar is the
+// honest state rather than a placeholder countdown.
+export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Drops",
+  description:
+    "Scheduled releases from WockkingDagger. When the timer hits zero the door opens; when stock runs out it closes.",
+  alternates: { canonical: "/drops" },
+};
+
+export default async function DropsPage() {
+  const drops = await getDropsView();
+  const [upcomingProducts, liveProducts] = await Promise.all([
+    drops.upcoming ? getDropProducts(drops.upcoming) : Promise.resolve([]),
+    drops.live[0] ? getDropProducts(drops.live[0]) : Promise.resolve([]),
+  ]);
+
+  const nothingScheduled =
+    !drops.upcoming && drops.live.length === 0 && drops.ended.length === 0;
 
   return (
     <>
-      <section className="border-b border-white/10 pt-40 md:pt-48">
-        <div className="mx-auto max-w-[1600px] px-5 pb-16 md:px-10 md:pb-24">
-          <p className="eyebrow-blade mb-5">━━ DROP CALENDAR</p>
-          <h1 className="display text-[clamp(3rem,12vw,10rem)] leading-[0.85] text-bone">
-            DROPS. <br />
-            <span className="text-blade">EVERY ONE.</span>
+      <section className="border-b border-[var(--line)]">
+        <div className="mx-auto max-w-shell px-gutter pb-12 pt-14 md:pb-16 md:pt-24">
+          <Reveal>
+            <p className="eyebrow-accent mb-5">Drop calendar</p>
+          </Reveal>
+          <h1 className="display-hero">
+            <MaskLine>Drops.</MaskLine>
+            <MaskLine delay={120}>
+              <span className="text-blade-text">Every one.</span>
+            </MaskLine>
           </h1>
-          <p className="mt-8 max-w-xl text-bone/60 md:text-lg">
-            Scheduled releases. When the timer hits zero, the door opens. When stock runs out, the
-            door closes. Nothing comes back.
-          </p>
+          <Reveal delay={260}>
+            <p className="prose-body mt-7 text-lg">
+              Scheduled releases. When the timer hits zero, the door opens. When stock runs out,
+              the door closes. Nothing comes back.
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* UPCOMING */}
-      {upcoming && (
-        <section className="relative overflow-hidden border-b border-white/10 bg-ink-800">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(200,16,46,0.18),transparent_60%)]" />
-          <div className="relative mx-auto max-w-[1600px] px-5 py-20 md:px-10 md:py-28">
-            <p className="eyebrow-blade mb-5">UPCOMING</p>
-            <div className="grid gap-10 md:grid-cols-12 md:gap-16">
-              <div className="md:col-span-7">
-                <h2 className="display text-[clamp(2.5rem,8vw,7rem)] leading-[0.9] text-bone">
-                  {upcoming.name}
-                </h2>
-                <p className="mt-8 max-w-2xl text-bone/70 md:text-lg">{upcoming.description}</p>
-                <p className="mt-6 font-mono text-[10px] uppercase tracking-widest text-bone/40">
-                  DROPS — {formatDate(upcoming.drops_at)}
-                  {upcoming.ends_at && ` · CLOSES ${formatDate(upcoming.ends_at)}`}
+      {/* ── UPCOMING — the slow reveal, given the most space ────── */}
+      {drops.upcoming && (
+        <section className="bleed relative overflow-hidden border-b border-[var(--line)] bg-surface-1">
+          <JsonLd data={dropEventSchema(drops.upcoming)} />
+          {drops.upcoming.hero_image_url && (
+            <div aria-hidden className="absolute inset-0 -z-10">
+              <div className="absolute inset-0 scale-110" data-parallax="0.06">
+                <Image
+                  src={drops.upcoming.hero_image_url}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className="object-cover opacity-20"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-ink/60 to-ink" />
+            </div>
+          )}
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(65%_55%_at_75%_0%,rgba(200,16,46,0.18),transparent_70%)]"
+          />
+
+          <div className="relative mx-auto grid max-w-shell gap-12 px-gutter py-section md:grid-cols-12 md:gap-16">
+            <div className="md:col-span-7">
+              <Reveal>
+                <p className="eyebrow-accent mb-5">Upcoming</p>
+              </Reveal>
+              <h2 className="display">
+                <MaskLine>{drops.upcoming.name}</MaskLine>
+              </h2>
+              {drops.upcoming.description && (
+                <Reveal delay={160}>
+                  <p className="prose-body mt-7 max-w-xl">{drops.upcoming.description}</p>
+                </Reveal>
+              )}
+              <Reveal delay={240}>
+                <p className="meta mt-7">
+                  Opens {formatDate(drops.upcoming.drops_at)}
+                  {drops.upcoming.ends_at && ` · closes ${formatDate(drops.upcoming.ends_at)}`}
                 </p>
-              </div>
-              <div className="md:col-span-5 md:pt-2">
-                <p className="eyebrow mb-5">DOORS OPEN IN</p>
-                <DropCountdown targetIso={upcoming.drops_at} />
-              </div>
+              </Reveal>
             </div>
 
-            {upcoming.product_ids.length > 0 && (
-              <div className="mt-16 border-t border-white/10 pt-10">
-                <p className="eyebrow mb-6">PIECES IN THIS DROP</p>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-                  {upcoming.product_ids
-                    .map((id) => getProductById(id))
-                    .filter(Boolean)
-                    .map((p) => (
-                      <ProductCard key={p!.id} product={p!} />
-                    ))}
+            <Reveal delay={120} className="md:col-span-5">
+              <p className="eyebrow mb-4">Doors open in</p>
+              <Countdown targetIso={drops.upcoming.drops_at} />
+            </Reveal>
+
+            {upcomingProducts.length > 0 && (
+              <div className="md:col-span-12">
+                <hr className="rule mb-10" />
+                <p className="eyebrow mb-6">Pieces in this drop</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-5">
+                  {upcomingProducts.map((p) => (
+                    <ProductCard key={p.id} product={p} group="upcoming-drop" />
+                  ))}
                 </div>
               </div>
             )}
@@ -66,67 +118,98 @@ export default function DropsPage() {
         </section>
       )}
 
-      {/* LIVE */}
-      {live && (
-        <section className="border-b border-white/10">
-          <div className="mx-auto max-w-[1600px] px-5 py-20 md:px-10 md:py-28">
+      {/* ── LIVE ─────────────────────────────────────────────────── */}
+      {drops.live.map((drop, index) => (
+        <section key={drop.id} className="border-b border-[var(--line)]">
+          <JsonLd data={dropEventSchema(drop)} />
+          <div className="mx-auto max-w-shell px-gutter py-section">
             <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
               <div>
-                <p className="eyebrow-blade mb-3 flex items-center gap-2">
-                  <span className="inline-block h-2 w-2 animate-pulse_blade rounded-full bg-blade" />
-                  LIVE NOW
+                <p className="eyebrow-accent mb-4 flex items-center gap-2">
+                  <span className="pulse-live inline-block h-2 w-2 rounded-full bg-blade" aria-hidden />
+                  Live now
                 </p>
-                <h2 className="display text-4xl md:text-6xl">{live.name}</h2>
-                <p className="mt-4 max-w-xl text-bone/60">{live.description}</p>
+                <h2 className="display text-section">{drop.name}</h2>
+                {drop.description && <p className="prose-body mt-4">{drop.description}</p>}
               </div>
-              <Link href="/shop" className="btn-blade">
-                SHOP THE DROP →
-              </Link>
+              {drop.ends_at && (
+                <div className="w-full max-w-sm">
+                  <p className="eyebrow mb-3">Closes in</p>
+                  <Countdown targetIso={drop.ends_at} onCompleteLabel="Closed" />
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-              {live.product_ids
-                .map((id) => getProductById(id))
-                .filter(Boolean)
-                .map((p) => (
-                  <ProductCard key={p!.id} product={p!} />
+
+            {index === 0 && liveProducts.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-5">
+                {liveProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} group="live-drop" />
                 ))}
-            </div>
+              </div>
+            )}
           </div>
         </section>
-      )}
+      ))}
 
-      {/* ENDED ARCHIVE */}
-      {ended.length > 0 && (
-        <section>
-          <div className="mx-auto max-w-[1600px] px-5 py-20 md:px-10 md:py-28">
-            <p className="eyebrow mb-3">━━ ARCHIVED DROPS</p>
-            <h2 className="display text-4xl md:text-6xl">CLOSED VAULT.</h2>
-            <p className="mt-4 max-w-xl text-bone/60">
-              Past drops, documented. Stock is gone, but the work stays on record.
+      {/* ── ARCHIVE ──────────────────────────────────────────────── */}
+      {drops.ended.length > 0 && (
+        <section className="border-b border-[var(--line)]">
+          <div className="mx-auto max-w-shell px-gutter py-section">
+            <Reveal>
+              <p className="eyebrow mb-4">Archived drops</p>
+            </Reveal>
+            <h2 className="display text-section">Closed vault.</h2>
+            <p className="prose-body mt-4">
+              Past drops, documented. The stock is gone; the record stays.
             </p>
 
-            <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
-              {ended.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex flex-col gap-2 py-8 md:flex-row md:items-center md:justify-between"
+            <ul className="mt-12 divide-y divide-[var(--line-faint)] border-y border-faint">
+              {drops.ended.map((drop) => (
+                <li
+                  key={drop.id}
+                  data-reveal=""
+                  data-reveal-group="ended"
+                  className="flex flex-col gap-2 py-7 md:flex-row md:items-baseline md:justify-between md:gap-8"
                 >
                   <div>
-                    <h3 className="font-display text-3xl uppercase tracking-tight text-bone md:text-4xl">
-                      {d.name}
+                    <h3 className="font-display text-[clamp(1.5rem,3vw,2.25rem)] uppercase tracking-display">
+                      {drop.name}
                     </h3>
-                    <p className="mt-1 max-w-xl text-sm text-bone/50">{d.description}</p>
+                    {drop.description && (
+                      <p className="prose-body mt-1 text-sm">{drop.description}</p>
+                    )}
                   </div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">
-                    {formatDate(d.drops_at)}
-                    {d.ends_at ? ` — ${formatDate(d.ends_at)}` : ""}
+                  <p className="meta shrink-0">
+                    {formatDate(drop.drops_at)}
+                    {drop.ends_at && ` — ${formatDate(drop.ends_at)}`}
                   </p>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
       )}
+
+      {nothingScheduled && (
+        <section className="mx-auto max-w-shell px-gutter py-section">
+          <EmptyState
+            eyebrow="Nothing scheduled"
+            title="No drop on the calendar."
+            body="When the next release is dated it appears here with a live countdown. The list finds out before the page does."
+          >
+            <div className="mx-auto mt-10 max-w-md text-left">
+              <SignupForm source="drops-empty" />
+            </div>
+          </EmptyState>
+        </section>
+      )}
+
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Drops", path: "/drops" },
+        ])}
+      />
     </>
   );
 }
