@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { serviceClient } from "@/lib/supabase";
+import { readClient } from "@/lib/supabase";
 import { logWarn } from "@/lib/log";
 import type { OrderLineItem } from "@/types";
 
@@ -75,7 +75,11 @@ export async function resolveCart(input: CartInput): Promise<ResolutionResult> {
     lines: [], removed: [], adjusted: [], subtotalCents: 0, currency: "USD",
   };
 
-  const db = serviceClient();
+  // Deliberately the anon client, not the service role. Everything this
+  // function reads is public catalog data that RLS already exposes, and
+  // /api/cart/validate is an unauthenticated endpoint — there is no reason
+  // for it to hold a key that bypasses row-level security.
+  const db = readClient();
   if (!db) return empty;
 
   // Collapse duplicate variant lines before hitting the database.

@@ -5,9 +5,11 @@
 // platforms it embeds and Stripe — and nothing else.
 const CSP = [
   "default-src 'self'",
-  // Next.js inlines a small bootstrap script; 'unsafe-inline' is required
-  // for it, and Stripe's script is loaded on the hosted checkout, not here.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+  // Next inlines a small bootstrap script, so 'unsafe-inline' is required
+  // until nonces are wired through. 'unsafe-eval' is not: the production
+  // build has no eval path, and it is the more dangerous of the two.
+  // Stripe's script runs on its own hosted checkout, not here.
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://i.ytimg.com https://*.ytimg.com https://static-cdn.jtvnw.net https://*.jtvnw.net https://*.cdninstagram.com https://*.tiktokcdn.com https://*.tiktokcdn-us.com https://*.supabase.co",
   "font-src 'self' data:",

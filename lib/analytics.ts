@@ -17,6 +17,8 @@
 // No personal data is ever sent — identifiers and counts only.
 // ============================================================
 
+import { track as vercelTrack } from "@vercel/analytics";
+
 export type AnalyticsEvent =
   | "view_product"
   | "add_to_cart"
@@ -34,22 +36,16 @@ export type AnalyticsEvent =
 
 type Properties = Record<string, string | number | boolean | null | undefined>;
 
-declare global {
-  interface Window {
-    va?: (event: "event", payload: { name: string } & Properties) => void;
-  }
-}
-
 export function track(event: AnalyticsEvent, properties: Properties = {}): void {
   if (typeof window === "undefined") return;
 
-  const clean: Properties = {};
+  const clean: Record<string, string | number | boolean | null> = {};
   for (const [k, v] of Object.entries(properties)) {
     if (v !== undefined && v !== null) clean[k] = v;
   }
 
   try {
-    window.va?.("event", { name: event, ...clean });
+    vercelTrack(event, clean);
   } catch {
     // Analytics must never break a purchase.
   }

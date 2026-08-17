@@ -208,11 +208,14 @@ test.describe("no placeholder content reaches a visitor", () => {
       await page.waitForLoadState("load");
     }
 
-    // Ignore failures caused by third-party image hosts being unreachable
-    // in a sandbox; they are not application errors.
-    const real = errors.filter(
-      (e) => !/net::ERR|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(e)
-    );
+    const real = errors.filter((e) => {
+      // Third-party image hosts are unreachable in the sandbox.
+      if (/net::ERR|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(e)) return false;
+      // /_vercel/insights/* is injected by Vercel's edge network. `next start`
+      // has no such route, so it 404s locally. It resolves on Vercel.
+      if (e.includes("/_vercel/insights/")) return false;
+      return true;
+    });
     expect(real, real.join("\n")).toEqual([]);
   });
 });

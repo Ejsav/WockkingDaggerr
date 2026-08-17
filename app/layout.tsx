@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Anton, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/site/Navigation";
@@ -102,6 +103,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
         </CartProvider>
         <MotionProvider />
+        {/* Without this, lib/analytics.ts writes to a window.va that never
+            exists and the whole funnel is silently a no-op. */}
+        <Analytics />
       </body>
     </html>
   );

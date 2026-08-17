@@ -27,6 +27,12 @@ const config = [
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  {
+    // Operator CLI scripts. Printing to stdout is their entire purpose;
+    // the no-console rule exists to keep debug output out of the app.
+    files: ["scripts/**"],
+    rules: { "no-console": "off" },
+  },
 ];
 
 export default config;

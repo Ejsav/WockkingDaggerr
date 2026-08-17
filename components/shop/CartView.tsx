@@ -135,12 +135,17 @@ export default function CartView() {
   }
 
   if (!ready) {
-    return <p className="meta mt-10">Loading your cart…</p>;
+    // Same height as the empty state below, so settling does not shift.
+    return (
+      <div className="mt-10 min-h-[22rem] border border-faint bg-surface-1 px-gutter py-16 text-center">
+        <p className="meta">Loading your cart…</p>
+      </div>
+    );
   }
 
   if (lines.length === 0) {
     return (
-      <div className="mt-10 border border-faint bg-surface-1 px-gutter py-16 text-center">
+      <div className="mt-10 min-h-[22rem] border border-faint bg-surface-1 px-gutter py-16 text-center">
         <p className="display text-section">Nothing in the cart.</p>
         <p className="prose-body mx-auto mt-4">
           {cancelled
