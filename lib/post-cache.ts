@@ -50,8 +50,10 @@ export function getCachedPosts(): Post[] {
   const cache = getCache();
 
   if (cache.size === 0) {
-    // Nothing synced yet — return mock posts minus fake YouTube IDs
-    return MOCK_POSTS.filter((p) => p.platform !== "youtube");
+    // Nothing synced yet — fall back to mock posts (including YouTube,
+    // which now uses real, embeddable video IDs) so the archive is never
+    // empty before YOUTUBE_API_KEY is configured.
+    return MOCK_POSTS;
   }
 
   // Merge: real synced posts + mock non-YouTube posts for unsynced platforms

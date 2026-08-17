@@ -23,7 +23,9 @@ export default function WatchPage() {
       const json = await res.json();
       if (Array.isArray(json.items)) setItems(json.items);
       return json;
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, []);
