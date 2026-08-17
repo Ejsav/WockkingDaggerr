@@ -12,3 +12,7 @@ next-env.d.ts
 /playwright-report
 /test-results
 /coverage
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
