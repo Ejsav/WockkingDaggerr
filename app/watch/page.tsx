@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import LiveBanner from "@/components/LiveBanner";
+import YouTubePlayer from "@/components/media/YouTubePlayer";
 import { cn, formatCompactNumber, formatRelativeDate, formatDuration } from "@/lib/utils";
 import type { MediaItem } from "@/lib/media";
 
@@ -72,6 +73,29 @@ export default function WatchPage() {
     }
     return list;
   }, [items, filter, sort, search]);
+
+  // FEATURED STAGE — newest YouTube upload plays inline at the top.
+  // Only shown in the default view (no filter, no search) so it never
+  // fights the user's own browsing.
+  const featured = useMemo(() => {
+    if (filter !== "all" || search.trim() || sort !== "newest") return null;
+    return (
+      items
+        .filter((i) => i.source === "youtube" && i.externalId)
+        .sort((a, b) => {
+          const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+          const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+          return tb - ta;
+        })[0] ?? null
+    );
+  }, [items, filter, search, sort]);
+
+  const gridItems = useMemo(
+    () => (featured ? filtered.filter((i) => i.id !== featured.id) : filtered),
+    [filtered, featured]
+  );
+
+  const upNext = useMemo(() => gridItems.slice(0, 3), [gridItems]);
 
   const TABS: { key: SourceFilter; label: string }[] = [
     { key: "all",     label: "ALL" },
@@ -155,29 +179,134 @@ export default function WatchPage() {
         </div>
       </section>
 
+      {/* FEATURED STAGE — newest upload plays right here */}
+      {featured && !loading && (
+        <section className="border-b border-white/10 bg-ink-800/40">
+          <div className="mx-auto grid max-w-[1600px] gap-6 px-5 py-10 md:grid-cols-12 md:gap-8 md:px-10 md:py-16">
+            <div className="md:col-span-8">
+              <p className="eyebrow-blade mb-4">━━ FRESH OFF THE BLADE</p>
+              <div className="relative aspect-video overflow-hidden border border-white/10 bg-ink-800">
+                <YouTubePlayer
+                  videoId={featured.externalId!}
+                  title={featured.title}
+                  className="absolute inset-0"
+                />
+              </div>
+              <h2 className="mt-5 font-display text-2xl uppercase leading-tight tracking-tight text-bone md:text-4xl">
+                {featured.title}
+              </h2>
+              <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-[10px] uppercase tracking-widest text-bone/45">
+                {featured.publishedAt && <span>{formatRelativeDate(featured.publishedAt)}</span>}
+                {featured.viewCount != null && (
+                  <span>{formatCompactNumber(featured.viewCount)} views</span>
+                )}
+                <Link
+                  href={`/watch/youtube/${featured.externalId}`}
+                  className="link-blade text-blade"
+                >
+                  THEATER MODE →
+                </Link>
+              </div>
+            </div>
+
+            {/* Up next rail */}
+            <aside className="md:col-span-4">
+              <p className="eyebrow mb-4">UP NEXT</p>
+              <div className="flex flex-col gap-3">
+                {upNext.map((item) => (
+                  <UpNextCard key={item.id} item={item} />
+                ))}
+              </div>
+            </aside>
+          </div>
+        </section>
+      )}
+
       {/* Grid */}
       <section className="mx-auto max-w-[1600px] px-5 py-12 md:px-10 md:py-20">
         {loading ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="aspect-video animate-pulse border border-white/5 bg-ink-700" />
+              <div
+                key={i}
+                className="relative aspect-video animate-pulse border border-white/5 bg-ink-700"
+              >
+                {i === 0 && (
+                  <span className="absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bone/30">
+                    PULLING THE ARCHIVE...
+                  </span>
+                )}
+              </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : gridItems.length === 0 ? (
           <div className="py-24 text-center">
             <p className="font-mono text-xs uppercase tracking-widest text-bone/35">
-              {search ? `No results for "${search}"` : "No content yet — syncing..."}
+              {search
+                ? `NOTHING IN THE VAULT FOR "${search.toUpperCase()}" — TRY ANOTHER CUT`
+                : "THE VAULT'S FILLING UP. SYNCING NOW."}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
-            {filtered.map((item, i) => (
+            {gridItems.map((item, i) => (
               <MediaCard key={item.id} item={item} priority={i < 3} />
             ))}
           </div>
         )}
       </section>
     </>
+  );
+}
+
+// ------------------------------------------------------------
+// UP NEXT CARD — compact horizontal card for the featured rail
+// ------------------------------------------------------------
+function UpNextCard({ item }: { item: MediaItem }) {
+  const href =
+    item.source === "youtube"
+      ? `/watch/youtube/${item.externalId}`
+      : item.source === "tiktok"
+      ? `/watch/tiktok/${item.externalId}`
+      : `/watch/twitch/${item.externalId}`;
+
+  return (
+    <Link href={href} className="group block">
+      <article className="card-lift flex gap-3 border border-white/5 bg-ink-700 p-2.5 hover:border-blade/40">
+        <div className="relative aspect-video w-32 shrink-0 overflow-hidden bg-ink-800 md:w-36">
+          {item.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.thumbnail}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 text-blade/20" fill="currentColor" aria-hidden>
+                <path d="M12 1L7 8h3v8l-2.5 3 4.5 3 4.5-3-2.5-3V8h3L12 1z" />
+              </svg>
+            </div>
+          )}
+          {item.duration != null && item.duration > 0 && (
+            <span className="absolute bottom-1 right-1 bg-ink/80 px-1 py-0.5 font-mono text-[8px] text-bone">
+              {formatDuration(item.duration)}
+            </span>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col justify-center gap-1.5">
+          <h3 className="line-clamp-2 font-display text-sm uppercase leading-tight tracking-tight text-bone transition-colors group-hover:text-blade">
+            {item.title}
+          </h3>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-bone/40">
+            {item.platformLabel}
+            {item.publishedAt ? ` · ${formatRelativeDate(item.publishedAt)}` : ""}
+          </p>
+        </div>
+      </article>
+    </Link>
   );
 }
 
@@ -197,7 +326,7 @@ function MediaCard({ item, priority }: { item: MediaItem; priority?: boolean }) 
   if (isTikTok) {
     return (
       <Link href={href} className="group block">
-        <article className="relative overflow-hidden border border-white/5 bg-ink-700 transition-colors duration-300 hover:border-blade/40">
+        <article className="card-lift relative overflow-hidden border border-white/5 bg-ink-700 hover:border-blade/40">
           {/* TikTok visual placeholder */}
           <div
             className="relative flex items-center justify-center bg-ink-800"
@@ -240,7 +369,7 @@ function MediaCard({ item, priority }: { item: MediaItem; priority?: boolean }) 
   // YouTube / Twitch card
   return (
     <Link href={href} className="group block">
-      <article className="relative overflow-hidden border border-white/5 bg-ink-700 transition-colors duration-300 hover:border-blade/40">
+      <article className="card-lift relative overflow-hidden border border-white/5 bg-ink-700 hover:border-blade/40">
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden bg-ink-800">
           {item.thumbnail ? (

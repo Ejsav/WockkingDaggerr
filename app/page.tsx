@@ -99,7 +99,7 @@ export default function HomePage() {
           ) : (
             <div className="border border-white/10 bg-ink-800/50 py-20 text-center">
               <p className="font-mono text-xs uppercase tracking-widest text-bone/40">
-                Content is loading — check back shortly for the latest WockkingDagger archive.
+                The vault&apos;s syncing. Fresh footage lands here first.
               </p>
               <Link
                 href="https://youtube.com/@wockkingdaggerr"

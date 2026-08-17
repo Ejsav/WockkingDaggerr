@@ -155,12 +155,12 @@ export default function Footer() {
           </div>
 
           <nav className="grid grid-cols-2 gap-x-12 gap-y-3 font-mono text-xs uppercase tracking-widest md:grid-cols-3">
-            <Link href="/watch" className="text-bone/60 hover:text-bone transition-colors">Watch</Link>
-            <Link href="/shop" className="text-bone/60 hover:text-bone transition-colors">Shop</Link>
-            <Link href="/drops" className="text-bone/60 hover:text-bone transition-colors">Drops</Link>
-            <a href="#" className="text-bone/60 hover:text-bone transition-colors">Privacy</a>
-            <a href="#" className="text-bone/60 hover:text-bone transition-colors">Terms</a>
-            <a href="#" className="text-bone/60 hover:text-bone transition-colors">Contact</a>
+            <Link href="/watch" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Watch</Link>
+            <Link href="/shop" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Shop</Link>
+            <Link href="/drops" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Drops</Link>
+            <a href="#" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Privacy</a>
+            <a href="#" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Terms</a>
+            <a href="#" className="link-blade w-fit text-bone/60 hover:text-bone transition-colors">Contact</a>
           </nav>
         </div>
       </div>
