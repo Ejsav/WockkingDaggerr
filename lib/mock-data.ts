@@ -230,7 +230,10 @@ export const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-const now = Date.now();
+// Deterministic anchor for demo drop timestamps. Using Date.now() here would
+// produce different ISO strings on every module evaluation (server vs client,
+// or between server renders), causing hydration mismatches downstream.
+const now = Date.parse("2026-08-17T00:00:00Z");
 const HOURS = 60 * 60 * 1000;
 const DAYS = 24 * HOURS;
 
