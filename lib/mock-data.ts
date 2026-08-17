@@ -230,9 +230,7 @@ export const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-// Keep demo drop timestamps deterministic across the server and browser render.
-// Using Date.now() here would produce different props during hydration.
-const now = Date.parse("2026-08-17T00:00:00Z");
+const now = Date.now();
 const HOURS = 60 * 60 * 1000;
 const DAYS = 24 * HOURS;
 

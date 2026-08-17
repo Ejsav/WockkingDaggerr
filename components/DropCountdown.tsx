@@ -10,24 +10,12 @@ export default function DropCountdown({
   targetIso: string;
   variant?: "default" | "compact";
 }) {
-  // Date.now() is intentionally read only after hydration. Reading it in the
-  // initial state makes the server and browser render different countdown text.
-  const [tick, setTick] = useState<ReturnType<typeof getCountdown> | null>(null);
+  const [tick, setTick] = useState(getCountdown(targetIso));
 
   useEffect(() => {
-    const update = () => setTick(getCountdown(targetIso));
-    update();
-    const interval = setInterval(update, 1000);
+    const interval = setInterval(() => setTick(getCountdown(targetIso)), 1000);
     return () => clearInterval(interval);
   }, [targetIso]);
-
-  if (!tick) {
-    return (
-      <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
-        CALCULATING…
-      </span>
-    );
-  }
 
   if (tick.totalMs <= 0) {
     return (
