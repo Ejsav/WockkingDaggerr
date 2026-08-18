@@ -174,3 +174,210 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ============================================================
+   BOOT SCREEN — signature loading sequence
+   ============================================================ */
+.boot-screen {
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    clip-path 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  clip-path: inset(0 0 0 0);
+}
+
+.boot-exit {
+  opacity: 0;
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+}
+
+.boot-scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(245, 241, 234, 0.6) 3px,
+    transparent 4px
+  );
+}
+
+.boot-blade-draw {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: bladeDraw 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.boot-blade-fill {
+  opacity: 0;
+  animation: bladeFill 0.3s ease-out 0.5s forwards;
+}
+
+@keyframes bladeDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes bladeFill {
+  to {
+    opacity: 1;
+  }
+}
+
+.boot-wordmark {
+  position: relative;
+  animation: glitchIn 0.5s steps(6) 0.35s both;
+}
+
+@keyframes glitchIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px) skewX(-8deg);
+    filter: blur(2px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(4px) skewX(4deg);
+  }
+  40% {
+    transform: translateX(-2px) skewX(-2deg);
+  }
+  60% {
+    transform: translateX(1px);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.boot-status-line {
+  animation: fadeIn 0.25s ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   SIGNATURE MICRO-INTERACTIONS
+   ============================================================ */
+
+/* Blade underline sweep — nav links, inline links */
+.link-blade {
+  position: relative;
+}
+.link-blade::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 1px;
+  width: 100%;
+  background: var(--color-blade);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.link-blade:hover::after,
+.link-blade:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Card lift — shared depth interaction for media/product cards */
+.card-lift {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -18px rgba(200, 16, 46, 0.35);
+}
+
+/* Live pulse ring — shared LIVE indicator */
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(200, 16, 46, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(200, 16, 46, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(200, 16, 46, 0);
+  }
+}
+.live-pulse {
+  animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glitch hover — for the logo easter egg + headline accents */
+@keyframes bladeFlash {
+  0%,
+  100% {
+    filter: none;
+    transform: none;
+  }
+  15% {
+    filter: hue-rotate(10deg) brightness(1.4);
+    transform: translateX(-2px) skewX(-4deg);
+  }
+  30% {
+    transform: translateX(2px) skewX(3deg);
+  }
+  45% {
+    filter: none;
+    transform: translateX(-1px);
+  }
+}
+.blade-flash {
+  animation: bladeFlash 0.4s steps(4) both;
+}
+
+/* LIVE MODE — when the stream is on, the whole site gets a low red glow
+   at the top edge. Set via data-live attribute on <html>. */
+html[data-live] body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30vh;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(200, 16, 46, 0.12),
+    transparent 70%
+  );
+  animation: pulseBladeSoft 4s ease-in-out infinite;
+}
+
+@keyframes pulseBladeSoft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Page enter — compact branded route transition (no full loader) */
+.page-enter {
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-screen,
+  .boot-exit {
+    transition: none;
+    clip-path: none;
+  }
+}

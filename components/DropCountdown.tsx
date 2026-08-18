@@ -10,12 +10,35 @@ export default function DropCountdown({
   targetIso: string;
   variant?: "default" | "compact";
 }) {
-  const [tick, setTick] = useState(getCountdown(targetIso));
+  // Date.now() is read only after hydration. Computing the initial tick during
+  // render makes the server and client disagree (e.g. SEC 51 vs 50) and throws
+  // a hydration mismatch.
+  const [tick, setTick] = useState<ReturnType<typeof getCountdown> | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => setTick(getCountdown(targetIso)), 1000);
+    const update = () => setTick(getCountdown(targetIso));
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [targetIso]);
+
+  if (!tick) {
+    if (variant === "compact") {
+      return (
+        <span className="font-mono text-xs uppercase tracking-widest text-bone/40">
+          SYNCING...
+        </span>
+      );
+    }
+    return (
+      <div className="grid grid-cols-4 gap-3 md:gap-6">
+        <Unit value={0} label="DAYS" />
+        <Unit value={0} label="HOURS" />
+        <Unit value={0} label="MIN" />
+        <Unit value={0} label="SEC" accent />
+      </div>
+    );
+  }
 
   if (tick.totalMs <= 0) {
     return (

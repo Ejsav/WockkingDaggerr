@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import TwitchPlayer from "@/components/media/TwitchPlayer";
-import type { LiveResponse } from "@/app/api/live/route";
+import { useLive } from "@/components/LiveProvider";
 import { WD } from "@/lib/wockkingdagger";
-
-const POLL_INTERVAL_MS = 60_000;
 
 function formatViewers(n: number | null): string {
   if (n === null) return "";
@@ -24,40 +22,9 @@ function formatStreamDuration(startedAt: string | null): string {
 }
 
 export default function LiveBanner() {
-  const [data, setData] = useState<LiveResponse | null>(null);
+  const data = useLive();
   const [collapsed, setCollapsed] = useState(true);
   const [muted, setMuted] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function pollLive() {
-      if (document.visibilityState !== "visible") return;
-
-      try {
-        const res = await fetch("/api/live", { cache: "no-store" });
-        if (!res.ok || cancelled) return;
-        const json: LiveResponse = await res.json();
-        if (!cancelled) setData(json);
-      } catch {
-        // Keep the last known UI state and retry on the next visible interval.
-      }
-    }
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") void pollLive();
-    };
-
-    void pollLive();
-    const intervalId = window.setInterval(() => void pollLive(), POLL_INTERVAL_MS);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
 
   if (!data?.isLive) return null;
 

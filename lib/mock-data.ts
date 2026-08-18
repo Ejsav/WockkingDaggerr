@@ -27,12 +27,12 @@ export const MOCK_POSTS: Post[] = [
   {
     id: "post_yt_02",
     platform: "youtube",
-    external_id: "vid_002",
+    external_id: "jNQXAC9IVRw",
     title: "Studio Diary 04 — Pressure Makes The Edge",
     description: "Behind the next drop. Late nights, raw footage, no filter.",
     thumbnail_url: "/placeholders/thumb-2.svg",
-    embed_url: "https://www.youtube.com/embed/vid_002",
-    permalink: "https://youtube.com/watch?v=vid_002",
+    embed_url: "https://www.youtube.com/embed/jNQXAC9IVRw",
+    permalink: "https://youtube.com/watch?v=jNQXAC9IVRw",
     posted_at: "2026-05-04T19:30:00Z",
     duration_seconds: 528,
     view_count: 92110,
@@ -42,12 +42,12 @@ export const MOCK_POSTS: Post[] = [
   {
     id: "post_yt_03",
     platform: "youtube",
-    external_id: "vid_003",
+    external_id: "y6120QOlsfU",
     title: "On Building A Brand In Hostile Territory",
     description: "Long-form. The story so far.",
     thumbnail_url: "/placeholders/thumb-3.svg",
-    embed_url: "https://www.youtube.com/embed/vid_003",
-    permalink: "https://youtube.com/watch?v=vid_003",
+    embed_url: "https://www.youtube.com/embed/y6120QOlsfU",
+    permalink: "https://youtube.com/watch?v=y6120QOlsfU",
     posted_at: "2026-04-22T12:00:00Z",
     duration_seconds: 1142,
     view_count: 67800,
@@ -230,7 +230,10 @@ export const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-const now = Date.now();
+// Deterministic anchor for demo drop timestamps. Using Date.now() here would
+// produce different ISO strings on every module evaluation (server vs client,
+// or between server renders), causing hydration mismatches downstream.
+const now = Date.parse("2026-08-17T00:00:00Z");
 const HOURS = 60 * 60 * 1000;
 const DAYS = 24 * HOURS;
 

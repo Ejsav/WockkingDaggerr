@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_SOCIALS } from "@/lib/socials";
+import { useLive } from "@/components/LiveProvider";
+import { WD } from "@/lib/wockkingdagger";
 
 const NAV_ITEMS = [
   { label: "WATCH", href: "/watch" },
@@ -14,8 +16,16 @@ const NAV_ITEMS = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const live = useLive();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [flash, setFlash] = useState(false);
+
+  // Easter egg — clicking the blade mark makes it flash/glitch
+  function triggerFlash() {
+    setFlash(true);
+    window.setTimeout(() => setFlash(false), 450);
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -36,15 +46,43 @@ export default function Navigation() {
     >
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-4 md:px-10 md:py-5">
         {/* Logo */}
-        <Link href="/" className="group flex items-center gap-3" aria-label="WockkingDagger home">
-          <BladeMark className="h-6 w-6 text-blade transition-transform group-hover:rotate-[8deg]" />
-          <span className="font-display text-lg leading-none tracking-wider">
+        <Link
+          href="/"
+          className="group flex items-center gap-3"
+          aria-label="WockkingDagger home"
+          onClick={triggerFlash}
+        >
+          <BladeMark
+            className={cn(
+              "h-6 w-6 text-blade transition-transform group-hover:rotate-[8deg]",
+              flash && "blade-flash"
+            )}
+          />
+          <span className={cn("font-display text-lg leading-none tracking-wider", flash && "blade-flash")}>
             WOCKKING<span className="text-blade">DAGGER</span>
           </span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
+          {/* Creator status — LIVE pill or quiet offline readout */}
+          {live?.isLive ? (
+            <a
+              href={WD.twitch.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 border border-blade bg-blade/15 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-blade transition-colors hover:bg-blade hover:text-bone"
+            >
+              <span className="live-pulse h-1.5 w-1.5 rounded-full bg-blade" aria-hidden />
+              LIVE NOW
+            </a>
+          ) : live ? (
+            <span className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-bone/35 lg:flex">
+              <span className="h-1.5 w-1.5 rounded-full bg-bone/25" aria-hidden />
+              OFFLINE — THE ARCHIVE&apos;S OPEN
+            </span>
+          ) : null}
+
           {NAV_ITEMS.map((item) => {
             const active = pathname?.startsWith(item.href);
             return (
@@ -52,7 +90,7 @@ export default function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "font-mono text-xs font-medium tracking-widest transition-colors",
+                  "link-blade font-mono text-xs font-medium tracking-widest transition-colors",
                   active ? "text-blade" : "text-bone/70 hover:text-bone"
                 )}
               >
@@ -81,7 +119,18 @@ export default function Navigation() {
           </div>
         </nav>
 
-        {/* Mobile hamburger */}
+        {/* Mobile: live chip + hamburger */}
+        {live?.isLive && (
+          <a
+            href={WD.twitch.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto mr-3 flex items-center gap-1.5 border border-blade bg-blade/15 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-widest text-blade md:hidden"
+          >
+            <span className="live-pulse h-1 w-1 rounded-full bg-blade" aria-hidden />
+            LIVE
+          </a>
+        )}
         <button
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((v) => !v)}

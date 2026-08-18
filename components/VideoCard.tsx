@@ -53,7 +53,7 @@ export default function VideoCard({ post, priority = false }: { post: Post; prio
   const isExternal = post.platform !== "youtube";
 
   const card = (
-    <article className="relative overflow-hidden border border-white/5 bg-ink-700 transition-colors duration-300 hover:border-blade/40">
+    <article className="card-lift relative overflow-hidden border border-white/5 bg-ink-700 hover:border-blade/40">
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden bg-ink-800">
         {showPlaceholder ? (
