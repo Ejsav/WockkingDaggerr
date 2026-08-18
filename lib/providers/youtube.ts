@@ -1,4 +1,5 @@
 import type { Post } from "@/types";
+import { WD } from "@/lib/wockkingdagger";
 
 // ------------------------------------------------------------
 // YOUTUBE PROVIDER — v3
@@ -147,8 +148,10 @@ async function fetchPlaylist(
 
 export async function fetchYouTubeUploads(): Promise<YouTubeFetchResult> {
   const apiKey = process.env.YOUTUBE_API_KEY;
-  const playlist1 = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID;
-  const playlist2 = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID_2;
+  // Uploads playlist IDs are derived from the @Wockkingdaggerr channel IDs
+  // in lib/wockkingdagger.ts (UC -> UU) unless explicitly overridden via env.
+  const playlist1 = WD.youtube.uploadsPlaylistMain;
+  const playlist2 = WD.youtube.uploadsPlaylistLive;
 
   if (!apiKey || !playlist1) {
     return {

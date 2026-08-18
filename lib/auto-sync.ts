@@ -11,9 +11,10 @@ export async function autoSyncYouTube(): Promise<void> {
   if (ytInitialized) return;
   ytInitialized = true;
 
+  // Playlist ID falls back to one derived from the @Wockkingdaggerr channel
+  // ID in lib/wockkingdagger.ts, so this only needs YOUTUBE_API_KEY set.
   const apiKey = process.env.YOUTUBE_API_KEY;
-  const playlist1 = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID;
-  if (!apiKey || !playlist1) return;
+  if (!apiKey) return;
 
   try {
     const { fetchYouTubeUploads } = await import("@/lib/providers/youtube");
